@@ -17,6 +17,10 @@ endfunction()
 ###############################################################################
 
 set(cio_sources
+    "src/allocator.c"
+    "src/loop.c"
+    "src/misc.c"
+    "src/thread.c"
     "src/cio.c"
 )
 
