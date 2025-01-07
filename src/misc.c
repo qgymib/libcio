@@ -33,6 +33,8 @@ uint64_t cio_hrtime(void)
 
 #else
 
+#include <stdlib.h>
+
 uint64_t cio_hrtime(void)
 {
     struct timespec t;

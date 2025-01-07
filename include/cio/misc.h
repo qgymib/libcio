@@ -8,6 +8,11 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup CIO_MISC Miscellaneous utilities
+ * @{
+ */
+
+/**
  * @brief Get high-resolution time in nanoseconds.
  * @return High-resolution time in nanoseconds.
  */
@@ -21,6 +26,10 @@ uint64_t cio_hrtime(void);
  * @warning Don't call any functions from this library after calling this function.
  */
 void cio_shutdown_library(void);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

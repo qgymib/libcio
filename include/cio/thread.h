@@ -9,6 +9,11 @@ extern "C" {
  * @{
  */
 
+/**
+ * @defgroup CIO_ONCE Once-only initialization
+ * @{
+ */
+
 #if defined(_WIN32)
 
 #ifndef _WIN32_WINNT
@@ -45,11 +50,6 @@ typedef pthread_once_t cio_once_t;
 #define CIO_ONCE_INIT PTHREAD_ONCE_INIT
 
 #endif
-
-/**
- * @defgroup CIO_ONCE Once-only initialization
- * @{
- */
 
 /**
  * @brief Once execution callback.

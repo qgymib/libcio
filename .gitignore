@@ -1,3 +1,6 @@
+# Generated documents
+/docs/html
+
 # Temporary build files
 /build*
 

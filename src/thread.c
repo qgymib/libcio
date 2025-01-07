@@ -329,6 +329,8 @@ int cio_sem_wait(cio_sem_t* sem, uint32_t timeout)
 
 #else
 
+#include <semaphore.h>
+
 struct cio_thread
 {
     pthread_t     thread; /**< Thread handle. */
