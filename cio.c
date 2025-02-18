@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include "cio.h"
 #include <assert.h>
+#include <string.h>
 
 #if defined(_WIN32)
 
@@ -276,7 +277,7 @@ static int s_thread_init_win(cio_thread_t* thread, cio_thread_fn body,
         return CIO_EACCES;
     case EAGAIN:
         return CIO_EAGAIN;
-    case EINVAL:
+    default:
         return CIO_EINVAL;
     }
 
@@ -295,7 +296,7 @@ static BOOL CALLBACK s_init_once(PINIT_ONCE InitOnce, PVOID Parameter,
 
 void cio_once(cio_once_t* guard, cio_once_fn cb)
 {
-    BOOL bStatus = InitOnceExecuteOnce(guard, s_init_once, cb, NULL);
+    BOOL bStatus = InitOnceExecuteOnce(guard, s_init_once, (PVOID)cb, NULL);
     if (!bStatus)
     {
         abort();
