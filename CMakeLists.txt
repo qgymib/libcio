@@ -17,11 +17,7 @@ endfunction()
 ###############################################################################
 
 set(cio_sources
-    "src/allocator.c"
-    "src/loop.c"
-    "src/misc.c"
-    "src/thread.c"
-    "src/cio.c"
+    "cio.c"
 )
 
 add_library(${PROJECT_NAME} ${cio_sources})
@@ -30,9 +26,9 @@ cio_setup_target_wall(${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME}
     PUBLIC
         $<INSTALL_INTERFACE:include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 ###############################################################################
