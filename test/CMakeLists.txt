@@ -1,6 +1,7 @@
 set(test_name ${PROJECT_NAME}_test)
 
 add_executable(${test_name}
+    "cases/async.c"
     "cases/synchronization_once.c"
     "cases/synchronization_thread.c"
     "cases/synchronization_thread_key.c"

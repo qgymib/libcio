@@ -407,6 +407,13 @@ int cio_translate_sys_error(int sys_errno);
  * @{
  */
 
+typedef enum cio_loop_mode
+{
+    CIO_LOOP_DEFAULT,
+    CIO_LOOP_ONCE,
+    CIO_LOOP_NOWAIT,
+} cio_loop_mode_t;
+
 /**
  * @brief Event loop handle.
  */
@@ -428,6 +435,15 @@ int cio_loop_init(cio_loop_t** loop);
 int cio_loop_exit(cio_loop_t* loop);
 
 /**
+ * @brief Run event loop.
+ * @param[in] loop Event loop.
+ * @param[in] mode Run mode.
+ * @param[in] timeout Run timeout.
+ * @return 0 on success, or an error code < 0 on failure.
+ */
+int cio_loop_run(cio_loop_t* loop, cio_loop_mode_t mode, uint32_t timeout);
+
+/**
  * @brief Get the current timestamp in milliseconds.
  * @param[in] loop The event loop.
  * @return Current timestamp in milliseconds.
@@ -439,6 +455,53 @@ uint64_t cio_loop_now(const cio_loop_t* loop);
  * @param[in] loop The event loop.
  */
 void cio_loop_update_time(cio_loop_t* loop);
+
+/**
+ * @}
+ */
+
+/**
+ * @defgroup CIO_ASYNC Async handle
+ * @{
+ */
+
+/**
+ * @brief Async handle.
+ */
+typedef struct cio_async cio_async_t;
+
+/**
+ * @brief Type definition for callback passed to #cio_async_init().
+ * @param[in] arg User defined argument.
+ */
+typedef void (*cio_async_cb)(void* arg);
+
+/**
+ * @brief Initialize the handle. A NULL callback is allowed.
+ * @note Unlike other handle initialization functions, it immediately starts the
+ * handle.
+ * @param[out] async Async handle.
+ * @param[in] loop Event loop.
+ * @param[in] cb Callback
+ * @param[in] arg User defined argument.
+ * @return 0 on success, or an error code < 0 on failure.
+ */
+int cio_async_init(cio_async_t** async, cio_loop_t* loop, cio_async_cb cb,
+                   void* arg);
+
+/**
+ * @brief Request \p async to be closed.
+ * @param[in] async Async handle.
+ * @param[in] close_cb Close callback.
+ * @param[in] close_arg User defined argument.
+ */
+void cio_async_exit(cio_async_t* async, cio_async_cb close_cb, void* close_arg);
+
+/**
+ * @brief Wake up the event loop and call the async handle’s callback.
+ * @param[in] async Async handle.
+ */
+void cio_async_send(cio_async_t* async);
 
 /**
  * @}
