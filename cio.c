@@ -211,10 +211,6 @@ uint64_t cio_hrtime(void)
     return (uint64_t)result;
 }
 
-void cio_shutdown_library(void)
-{
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 /// CIO_THREAD-win32
 ////////////////////////////////////////////////////////////////////////////////
@@ -568,10 +564,6 @@ uint64_t cio_hrtime(void)
         abort();
     }
     return t.tv_sec * (uint64_t)1e9 + t.tv_nsec;
-}
-
-void cio_shutdown_library(void)
-{
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1011,6 +1003,350 @@ void cio_free(void* ptr)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// CIO_LIST
+////////////////////////////////////////////////////////////////////////////////
+
+static void _list_lite_set_once(cio_list_t* handler, cio_list_node_t* node)
+{
+    handler->head = node;
+    handler->tail = node;
+    node->p_after = NULL;
+    node->p_before = NULL;
+    handler->size = 1;
+}
+
+void cio_list_init(cio_list_t* handler)
+{
+    memset(handler, 0, sizeof(*handler));
+}
+
+void cio_list_push_back(cio_list_t* handler, cio_list_node_t* node)
+{
+    if (handler->head == NULL)
+    {
+        _list_lite_set_once(handler, node);
+        return;
+    }
+
+    node->p_after = NULL;
+    node->p_before = handler->tail;
+    handler->tail->p_after = node;
+    handler->tail = node;
+    handler->size++;
+}
+
+void cio_list_insert_before(cio_list_t* handler, cio_list_node_t* pos,
+                            cio_list_node_t* node)
+{
+    if (handler->head == pos)
+    {
+        cio_list_push_front(handler, node);
+        return;
+    }
+
+    node->p_before = pos->p_before;
+    node->p_after = pos;
+    pos->p_before->p_after = node;
+    pos->p_before = node;
+    handler->size++;
+}
+
+void cio_list_insert_after(cio_list_t* handler, cio_list_node_t* pos,
+                           cio_list_node_t* node)
+{
+    if (handler->tail == pos)
+    {
+        cio_list_push_back(handler, node);
+        return;
+    }
+
+    node->p_before = pos;
+    node->p_after = pos->p_after;
+    pos->p_after->p_before = node;
+    pos->p_after = node;
+    handler->size++;
+}
+
+void cio_list_push_front(cio_list_t* handler, cio_list_node_t* node)
+{
+    if (handler->head == NULL)
+    {
+        _list_lite_set_once(handler, node);
+        return;
+    }
+
+    node->p_before = NULL;
+    node->p_after = handler->head;
+    handler->head->p_before = node;
+    handler->head = node;
+    handler->size++;
+}
+
+cio_list_node_t* cio_list_begin(const cio_list_t* handler)
+{
+    return handler->head;
+}
+
+cio_list_node_t* cio_list_end(const cio_list_t* handler)
+{
+    return handler->tail;
+}
+
+cio_list_node_t* cio_list_next(const cio_list_node_t* node)
+{
+    return node->p_after;
+}
+
+cio_list_node_t* cio_list_prev(const cio_list_node_t* node)
+{
+    return node->p_before;
+}
+
+void cio_list_erase(cio_list_t* handler, cio_list_node_t* node)
+{
+    handler->size--;
+
+    /* Only one node */
+    if (handler->head == node && handler->tail == node)
+    {
+        handler->head = NULL;
+        handler->tail = NULL;
+        goto fin;
+    }
+
+    if (handler->head == node)
+    {
+        node->p_after->p_before = NULL;
+        handler->head = node->p_after;
+        goto fin;
+    }
+
+    if (handler->tail == node)
+    {
+        node->p_before->p_after = NULL;
+        handler->tail = node->p_before;
+        goto fin;
+    }
+
+    node->p_before->p_after = node->p_after;
+    node->p_after->p_before = node->p_before;
+
+fin:
+    node->p_after = NULL;
+    node->p_before = NULL;
+}
+
+cio_list_node_t* cio_list_pop_front(cio_list_t* handler)
+{
+    cio_list_node_t* node = handler->head;
+    if (node == NULL)
+    {
+        return NULL;
+    }
+
+    cio_list_erase(handler, node);
+    return node;
+}
+
+cio_list_node_t* ev_list_pop_back(cio_list_t* handler)
+{
+    cio_list_node_t* node = handler->tail;
+    if (node == NULL)
+    {
+        return NULL;
+    }
+
+    cio_list_erase(handler, node);
+    return node;
+}
+
+size_t cio_list_size(const cio_list_t* handler)
+{
+    return handler->size;
+}
+
+void cio_list_migrate(cio_list_t* dst, cio_list_t* src)
+{
+    if (src->head == NULL)
+    {
+        return;
+    }
+
+    if (dst->tail == NULL)
+    {
+        *dst = *src;
+    }
+    else
+    {
+        dst->tail->p_after = src->head;
+        dst->tail->p_after->p_before = dst->tail;
+        dst->tail = src->tail;
+        dst->size += src->size;
+    }
+
+    src->head = NULL;
+    src->tail = NULL;
+    src->size = 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// CIO_THREAD_POOL
+////////////////////////////////////////////////////////////////////////////////
+
+typedef struct cio_threadpool_work
+{
+    cio_list_node_t   node;
+    int64_t           id;
+    cio_loop_t*       loop;
+    cio_work_cb       work;
+    cio_after_work_cb after_work;
+    void*             arg;
+} cio_threadpool_work_t;
+
+typedef struct cio_threadpool
+{
+    int looping;
+
+    cio_thread_t** threads;
+    size_t         thread_num;
+
+    cio_sem_t*   work_queue_sem;
+    cio_mutex_t* work_queue_mutex;
+    cio_list_t   work_queue;
+    int64_t      work_queue_cnt;
+} cio_threadpool_t;
+
+static cio_threadpool_t* s_threadpool = NULL;
+
+static void s_threadpool_worker(void* arg)
+{
+    (void)arg;
+
+    while (s_threadpool->looping)
+    {
+        cio_sem_wait(s_threadpool->work_queue_sem, 100);
+
+        cio_threadpool_work_t* record = NULL;
+        cio_mutex_lock(s_threadpool->work_queue_mutex);
+        {
+            cio_list_node_t* node =
+                cio_list_pop_front(&s_threadpool->work_queue);
+            if (node != NULL)
+            {
+                record = CIO_CONTAINER_OF(node, cio_threadpool_work_t, node);
+            }
+        }
+        cio_mutex_unlock(s_threadpool->work_queue_mutex);
+
+        if (record != NULL)
+        {
+            record->work(record->arg);
+            cio_free(record);
+        }
+    }
+}
+
+static void s_threadpool_init(void)
+{
+    if ((s_threadpool = cio_calloc(1, sizeof(*s_threadpool))) == NULL)
+    {
+        abort();
+    }
+    s_threadpool->looping = 1;
+
+    if (cio_mutex_init(&s_threadpool->work_queue_mutex, 0) != 0)
+    {
+        abort();
+    }
+
+    if (cio_sem_init(&s_threadpool->work_queue_sem, 0) != 0)
+    {
+        abort();
+    }
+
+    s_threadpool->thread_num = 1;
+    size_t malloc_sz = s_threadpool->thread_num * sizeof(cio_thread_t*);
+    if ((s_threadpool->threads = cio_calloc(1, malloc_sz)) == NULL)
+    {
+        abort();
+    }
+
+    size_t i;
+    for (i = 0; i < s_threadpool->thread_num; i++)
+    {
+        int ret = cio_thread_init(&s_threadpool->threads[i],
+                                  s_threadpool_worker, NULL);
+        if (ret != 0)
+        {
+            abort();
+        }
+    }
+}
+
+static void s_threadpool_exit(void)
+{
+    s_threadpool->looping = 0;
+
+    size_t i;
+    for (i = 0; i < s_threadpool->thread_num; i++)
+    {
+        cio_sem_post(s_threadpool->work_queue_sem);
+    }
+
+    for (i = 0; i < s_threadpool->thread_num; i++)
+    {
+        int ret =
+            cio_thread_exit(s_threadpool->threads[i], CIO_TIMEOUT_INFINITE);
+        if (ret != 0)
+        {
+            abort();
+        }
+    }
+
+    cio_mutex_exit(s_threadpool->work_queue_mutex);
+    s_threadpool->work_queue_mutex = NULL;
+
+    cio_sem_exit(s_threadpool->work_queue_sem);
+    s_threadpool->work_queue_sem = NULL;
+
+    cio_free(s_threadpool->threads);
+    s_threadpool->threads = NULL;
+    s_threadpool->thread_num = 0;
+
+    cio_free(s_threadpool);
+    s_threadpool = NULL;
+}
+
+int64_t cio_queue_work(cio_loop_t* loop, cio_work_cb work,
+                       cio_after_work_cb after_work, void* arg)
+{
+    int64_t id = 0;
+    cio_initialize();
+
+    cio_threadpool_work_t* record = cio_malloc(sizeof(cio_threadpool_work_t));
+    if (record == NULL)
+    {
+        return CIO_ENOMEM;
+    }
+
+    record->loop = loop;
+    record->work = work;
+    record->after_work = after_work;
+    record->arg = arg;
+
+    cio_mutex_lock(s_threadpool->work_queue_mutex);
+    {
+        id = s_threadpool->work_queue_cnt++;
+        record->id = id;
+        cio_list_push_back(&s_threadpool->work_queue, &record->node);
+    }
+    cio_mutex_unlock(s_threadpool->work_queue_mutex);
+    cio_sem_post(s_threadpool->work_queue_sem);
+
+    return id;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /// CIO_LOOP
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1022,4 +1358,50 @@ uint64_t cio_loop_now(const cio_loop_t* loop)
 void cio_loop_update_time(cio_loop_t* loop)
 {
     loop->time = cio_hrtime() / 1000000;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// CIO_MISC
+////////////////////////////////////////////////////////////////////////////////
+
+typedef struct cio_module
+{
+    void (*on_init)(void);
+    void (*on_exit)(void);
+} cio_module_t;
+
+static cio_module_t s_module[] = {
+    { s_threadpool_init, s_threadpool_exit },
+};
+
+static void s_cio_initialize(void)
+{
+    size_t i;
+    for (i = 0; i < CIO_ARRAY_SIZE(s_module); i++)
+    {
+        const cio_module_t* module = &s_module[i];
+        if (module->on_init != NULL)
+        {
+            module->on_init();
+        }
+    }
+}
+
+void cio_initialize(void)
+{
+    static cio_once_t token = CIO_ONCE_INIT;
+    cio_once(&token, s_cio_initialize);
+}
+
+void cio_shutdown_library(void)
+{
+    size_t i;
+    for (i = CIO_ARRAY_SIZE(s_module); i > 0; i--)
+    {
+        const cio_module_t* module = &s_module[i - 1];
+        if (module->on_exit != NULL)
+        {
+            module->on_exit();
+        }
+    }
 }

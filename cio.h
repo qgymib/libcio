@@ -27,6 +27,8 @@ typedef void* (*cio_allocator_fn)(void* ptr, size_t size);
 
 /**
  * @brief Replace allocator with new function.
+ * @warning If you want to replace allocator, this must be the first function to
+ * call.
  * @param[in] new_allocator New allocator function.
  * @return Old allocator.
  */
@@ -403,48 +405,6 @@ int cio_translate_sys_error(int sys_errno);
  */
 
 /**
- * @defgroup CIO_LOOP Event loop
- * @{
- */
-
-/**
- * @brief Event loop handle.
- */
-typedef struct cio_loop cio_loop_t;
-
-/**
- * @brief Create a new event loop.
- * @param[out] loop Event loop handle.
- * @return 0 if create success.
- */
-int cio_loop_init(cio_loop_t** loop);
-
-/**
- * @brief Releases all internal loop resources.
- * @param[in] loop Release an event loop.
- * @return 0 if release success.
- * @return #CIO_EBUSY if there are any pending requests or open handles.
- */
-int cio_loop_exit(cio_loop_t* loop);
-
-/**
- * @brief Get the current timestamp in milliseconds.
- * @param[in] loop The event loop.
- * @return Current timestamp in milliseconds.
- */
-uint64_t cio_loop_now(const cio_loop_t* loop);
-
-/**
- * @brief Updates the current timestamp.
- * @param[in] loop The event loop.
- */
-void cio_loop_update_time(cio_loop_t* loop);
-
-/**
- * @}
- */
-
-/**
  * @defgroup CIO_SYNCHRONIZATION Threading and synchronization utilities
  * @{
  */
@@ -731,6 +691,238 @@ int cio_sem_wait(cio_sem_t* sem, uint32_t timeout);
  */
 
 /**
+ * @defgroup CIO_LOOP Event loop
+ * @{
+ */
+
+/**
+ * @brief Event loop handle.
+ */
+typedef struct cio_loop cio_loop_t;
+
+/**
+ * @brief Create a new event loop.
+ * @param[out] loop Event loop handle.
+ * @return 0 if create success.
+ */
+int cio_loop_init(cio_loop_t** loop);
+
+/**
+ * @brief Releases all internal loop resources.
+ * @param[in] loop Release an event loop.
+ * @return 0 if release success.
+ * @return #CIO_EBUSY if there are any pending requests or open handles.
+ */
+int cio_loop_exit(cio_loop_t* loop);
+
+/**
+ * @brief Run event loop.
+ * @param[in] loop Event loop
+ * @param[in] mode Run mode
+ * @param[in] timeout Timeout in milliseconds
+ * @return 0
+ */
+int cio_loop_run(cio_loop_t* loop, int mode, uint32_t timeout);
+
+/**
+ * @brief Get the current timestamp in milliseconds.
+ * @param[in] loop The event loop.
+ * @return Current timestamp in milliseconds.
+ */
+uint64_t cio_loop_now(const cio_loop_t* loop);
+
+/**
+ * @brief Updates the current timestamp.
+ * @param[in] loop The event loop.
+ */
+void cio_loop_update_time(cio_loop_t* loop);
+
+/**
+ * @}
+ */
+
+/**
+ * @defgroup CIO_THREADPOOL Thread pool work scheduling
+ * @{
+ */
+
+typedef void (*cio_work_cb)(void* arg);
+typedef void (*cio_after_work_cb)(void* arg);
+
+/**
+ * @brief Post a work request, which run \p work in threadpool and run \p
+ * after_work in \p loop.
+ * @param[in] loop Event loop
+ * @param[in] work Work callback
+ * @param[in] after_work After work callback
+ * @param[in] arg User defined argument passed to \p work and \p after_work.
+ * @return <0 if failure, or a unique ID.
+ */
+int64_t cio_queue_work(cio_loop_t* loop, cio_work_cb work,
+                       cio_after_work_cb after_work, void* arg);
+
+/**
+ * @brief Cancel a work.
+ * @param[in] workid Work ID.
+ * @return 0 if success.
+ */
+int cio_cancel(int64_t workid);
+
+/**
+ * @}
+ */
+
+/**
+ * @defgroup CIO_LIST List
+ * @{
+ */
+
+/**
+ * @brief Static initializer for #cio_list_t
+ * @see cio_list_t
+ */
+#define CIO_LIST_INIT { NULL, NULL, 0 }
+
+/**
+ * @brief Static initializer for #cio_list_node_t
+ * @see cio_list_node_t
+ */
+#define CIO_LIST_NODE_INIT { NULL, NULL }
+
+/**
+ * @brief The list node.
+ * This node must put in your struct.
+ * @see EV_LIST_NODE_INIT
+ */
+typedef struct cio_list_node
+{
+    struct cio_list_node* p_after;  /**< Pointer to next node */
+    struct cio_list_node* p_before; /**< Pointer to previous node */
+} cio_list_node_t;
+
+/**
+ * @brief Double Linked List
+ * @see EV_LIST_INIT
+ */
+typedef struct cio_list
+{
+    cio_list_node_t* head; /**< Pointer to HEAD node */
+    cio_list_node_t* tail; /**< Pointer to TAIL node */
+    size_t           size; /**< The number of total nodes */
+} cio_list_t;
+
+/**
+ * @brief Initialize Double Linked List.
+ * @note It is guarantee that memset() to zero have the same affect.
+ * @param[out] handler  Pointer to list
+ */
+void cio_list_init(cio_list_t* handler);
+
+/**
+ * @brief Insert a node to the head of the list.
+ * @warning the node must not exist in any list.
+ * @param[in,out] handler   Pointer to list
+ * @param[in,out] node      Pointer to a new node
+ */
+void cio_list_push_front(cio_list_t* handler, cio_list_node_t* node);
+
+/**
+ * @brief Insert a node to the tail of the list.
+ * @warning the node must not exist in any list.
+ * @param[in,out] handler   Pointer to list
+ * @param[in,out] node      Pointer to a new node
+ */
+void cio_list_push_back(cio_list_t* handler, cio_list_node_t* node);
+
+/**
+ * @brief Insert a node in front of a given node.
+ * @warning the node must not exist in any list.
+ * @param[in,out] handler   Pointer to list
+ * @param[in,out] pos       Pointer to a exist node
+ * @param[in,out] node      Pointer to a new node
+ */
+void cio_list_insert_before(cio_list_t* handler, cio_list_node_t* pos,
+                            cio_list_node_t* node);
+
+/**
+ * @brief Insert a node right after a given node.
+ * @warning the node must not exist in any list.
+ * @param[in,out] handler   Pointer to list
+ * @param[in,out] pos       Pointer to a exist node
+ * @param[in,out] node      Pointer to a new node
+ */
+void cio_list_insert_after(cio_list_t* handler, cio_list_node_t* pos,
+                           cio_list_node_t* node);
+
+/**
+ * @brief Delete a exist node
+ * @warning The node must already in the list.
+ * @param[in,out] handler   Pointer to list
+ * @param[in,out] node      The node you want to delete
+ */
+void cio_list_erase(cio_list_t* handler, cio_list_node_t* node);
+
+/**
+ * @brief Get the number of nodes in the list.
+ * @param[in] handler   Pointer to list
+ * @return              The number of nodes
+ */
+size_t cio_list_size(const cio_list_t* handler);
+
+/**
+ * @brief Get the first node and remove it from the list.
+ * @param[in,out] handler   Pointer to list
+ * @return                  The first node
+ */
+cio_list_node_t* cio_list_pop_front(cio_list_t* handler);
+
+/**
+ * @brief Get the last node and remove it from the list.
+ * @param[in,out] handler   Pointer to list
+ * @return                  The last node
+ */
+cio_list_node_t* cio_list_pop_back(cio_list_t* handler);
+
+/**
+ * @brief Get the first node.
+ * @param[in] handler   Pointer to list
+ * @return              The first node
+ */
+cio_list_node_t* cio_list_begin(const cio_list_t* handler);
+
+/**
+ * @brief Get the last node.
+ * @param[in] handler   The handler of list
+ * @return              The last node
+ */
+cio_list_node_t* cio_list_end(const cio_list_t* handler);
+
+/**
+ * @brief Get next node.
+ * @param[in] node   Current node
+ * @return           The next node
+ */
+cio_list_node_t* cio_list_next(const cio_list_node_t* node);
+
+/**
+ * @brief Get previous node.
+ * @param[in] node  current node
+ * @return          previous node
+ */
+cio_list_node_t* cio_list_prev(const cio_list_node_t* node);
+
+/**
+ * @brief Move all elements from \p src into the end of \p dst.
+ * @param[in] dst   Destination list.
+ * @param[in] src   Source list.
+ */
+void cio_list_migrate(cio_list_t* dst, cio_list_t* src);
+
+/**
+ * @}
+ */
+
+/**
  * @defgroup CIO_MISC Miscellaneous utilities
  * @{
  */
@@ -753,10 +945,43 @@ int cio_sem_wait(cio_sem_t* sem, uint32_t timeout);
 #define CIO_MIN(a, b) ((a) < (b) ? (a) : (b))
 
 /**
+ * @def CIO_OFFSETOF
+ * @brief The offset of \p member in \p type.
+ */
+#if defined(offsetof)
+#define CIO_OFFSETOF(type, member) offsetof(type, member)
+#else
+#define CIO_OFFSETOF(type, member) ((size_t)&(((type*)0)->member))
+#endif
+
+/**
+ * @def EV_CONTAINER_OF
+ * @brief cast a member of a structure out to the containing structure.
+ */
+#if defined(__GNUC__) || defined(__clang__)
+#define CIO_CONTAINER_OF(ptr, type, member)                                    \
+    ({                                                                         \
+        const typeof(((type*)0)->member)* __mptr = (ptr);                      \
+        (type*)((char*)__mptr - CIO_OFFSETOF(type, member));                   \
+    })
+#else
+#define CIO_CONTAINER_OF(ptr, type, member)                                    \
+    ((type*)((char*)(ptr) - CIO_OFFSETOF(type, member)))
+#endif
+
+/**
  * @brief Get high-resolution time in nanoseconds.
  * @return High-resolution time in nanoseconds.
  */
 uint64_t cio_hrtime(void);
+
+/**
+ * @brief Initialize global resources.
+ * @note It is not necessary to call this function. All functions that relay on
+ * global resources will automatically call this function when needed.
+ * @note It is safe to call this function multiple times.
+ */
+void cio_initialize(void);
 
 /**
  * @brief Release all internal library resources.
