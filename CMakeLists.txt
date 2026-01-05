@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 project(cio)
 
 ###############################################################################
@@ -16,20 +16,37 @@ endfunction()
 # Setup library
 ###############################################################################
 
-set(cio_sources
-    "cio.c"
+add_library(${PROJECT_NAME}
+    "src/allocator.c"
+    "src/cio.c"
 )
-
-add_library(${PROJECT_NAME} ${cio_sources})
 cio_setup_target_wall(${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC
         $<INSTALL_INTERFACE:include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+if (WIN32)
+    target_sources(${PROJECT_NAME} PRIVATE
+        "src/win/error.c"
+        "src/win/loop.c"
+        "src/win/misc.c"
+        "src/win/mutex.c"
+        "src/win/once.c"
+        "src/win/rwlock.c"
+        "src/win/semaphore.c"
+        "src/win/thread.c"
+        "src/win/thread_key.c"
+    )
+else()
+    target_sources(${PROJECT_NAME} PRIVATE
+        "src/unix/loop.c"
+    )
+endif ()
 
 ###############################################################################
 # Build test
@@ -37,7 +54,7 @@ target_include_directories(${PROJECT_NAME}
 
 if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     include(CTest)
-endif()
+endif ()
 if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
     add_subdirectory(test)
-endif()
+endif ()
