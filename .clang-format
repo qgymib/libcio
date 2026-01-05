@@ -13,5 +13,5 @@ AlignConsecutiveDeclarations:
     AcrossEmptyLines: false
 BraceWrapping:
     AfterExternBlock: false
-ColumnLimit: 80
+ColumnLimit: 120
 ...

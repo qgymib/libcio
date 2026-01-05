@@ -19,6 +19,7 @@ endfunction()
 add_library(${PROJECT_NAME}
     "src/allocator.c"
     "src/cio.c"
+    "src/strerror.c"
 )
 cio_setup_target_wall(${PROJECT_NAME})
 

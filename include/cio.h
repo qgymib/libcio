@@ -290,54 +290,64 @@ extern "C" {
 
 typedef enum cio_errno
 {
-    CIO_EPERM = CIO__EPERM,
-    CIO_ENOENT = CIO__ENOENT,
-    CIO_EIO = CIO__EIO,
-    CIO_E2BIG = CIO__E2BIG,
-    CIO_EBADF = CIO__EBADF,
-    CIO_EAGAIN = CIO__EAGAIN,
-    CIO_ENOMEM = CIO__ENOMEM,
-    CIO_EACCES = CIO__EACCES,
-    CIO_EFAULT = CIO__EFAULT,
-    CIO_EBUSY = CIO__EBUSY,
-    CIO_EEXIST = CIO__EEXIST,
-    CIO_EXDEV = CIO__EXDEV,
-    CIO_ENOTDIR = CIO__ENOTDIR,
-    CIO_EISDIR = CIO__EISDIR,
-    CIO_EINVAL = CIO__EINVAL,
-    CIO_ENFILE = CIO__ENFILE,
-    CIO_EMFILE = CIO__EMFILE,
-    CIO_ENOSPC = CIO__ENOSPC,
-    CIO_EROFS = CIO__EROFS,
-    CIO_EPIPE = CIO__EPIPE,
-    CIO_ENAMETOOLONG = CIO__ENAMETOOLONG,
-    CIO_ENOSYS = CIO__ENOSYS,
-    CIO_ENOTEMPTY = CIO__ENOTEMPTY,
-    CIO_ELOOP = CIO__ELOOP,
-    CIO_EPROTO = CIO__EPROTO,
-    CIO_ENOTSOCK = CIO__ENOTSOCK,
-    CIO_EMSGSIZE = CIO__EMSGSIZE,
-    CIO_EPROTONOSUPPORT = CIO__EPROTONOSUPPORT,
-    CIO_ENOTSUP = CIO__ENOTSUP,
-    CIO_EAFNOSUPPORT = CIO__EAFNOSUPPORT,
-    CIO_EADDRINUSE = CIO__EADDRINUSE,
-    CIO_EADDRNOTAVAIL = CIO__EADDRNOTAVAIL,
-    CIO_ENETUNREACH = CIO__ENETUNREACH,
-    CIO_ECONNABORTED = CIO__ECONNABORTED,
-    CIO_ECONNRESET = CIO__ECONNRESET,
-    CIO_ENOBUFS = CIO__ENOBUFS,
-    CIO_EISCONN = CIO__EISCONN,
-    CIO_ENOTCONN = CIO__ENOTCONN,
-    CIO_ETIMEDOUT = CIO__ETIMEDOUT,
-    CIO_ECONNREFUSED = CIO__ECONNREFUSED,
-    CIO_EHOSTUNREACH = CIO__EHOSTUNREACH,
-    CIO_EALREADY = CIO__EALREADY,
-    CIO_EINPROGRESS = CIO__EINPROGRESS,
-    CIO_ECANCELED = CIO__ECANCELED,
+    CIO_SUCCESS = 0,                            /* No Error. */
+    CIO_EPERM = CIO__EPERM,                     /* Operation not permitted (POSIX.1-2001). */
+    CIO_ENOENT = CIO__ENOENT,                   /* No such file or directory (POSIX.1-2001). */
+    CIO_EIO = CIO__EIO,                         /* Input/output error (POSIX.1-2001). */
+    CIO_E2BIG = CIO__E2BIG,                     /* Argument list too long (POSIX.1-2001). */
+    CIO_EBADF = CIO__EBADF,                     /* Bad file descriptor (POSIX.1-2001). */
+    CIO_EAGAIN = CIO__EAGAIN,                   /* Resource temporarily unavailable (POSIX.1-2001). */
+    CIO_ENOMEM = CIO__ENOMEM,                   /* Not enough space/cannot allocate memory
+                                                   (POSIX.1-2001). */
+    CIO_EACCES = CIO__EACCES,                   /* Permission denied (POSIX.1-2001). */
+    CIO_EFAULT = CIO__EFAULT,                   /* Bad address (POSIX.1-2001). */
+    CIO_EBUSY = CIO__EBUSY,                     /* Device or resource busy (POSIX.1-2001). */
+    CIO_EEXIST = CIO__EEXIST,                   /* File exists (POSIX.1-2001). */
+    CIO_EXDEV = CIO__EXDEV,                     /* Invalid cross-device link (POSIX.1-2001). */
+    CIO_ENOTDIR = CIO__ENOTDIR,                 /* Not a directory (POSIX.1-2001). */
+    CIO_EISDIR = CIO__EISDIR,                   /* Is a directory (POSIX.1-2001). */
+    CIO_EINVAL = CIO__EINVAL,                   /* Invalid argument (POSIX.1-2001). */
+    CIO_ENFILE = CIO__ENFILE,                   /* Too many open files in system (POSIX.1-2001). */
+    CIO_EMFILE = CIO__EMFILE,                   /* Too many open files (POSIX.1-2001). */
+    CIO_ENOSPC = CIO__ENOSPC,                   /* No space left on device (POSIX.1-2001). */
+    CIO_EROFS = CIO__EROFS,                     /* Read-only filesystem (POSIX.1-2001). */
+    CIO_EPIPE = CIO__EPIPE,                     /* Broken pipe (POSIX.1-2001). */
+    CIO_ENAMETOOLONG = CIO__ENAMETOOLONG,       /* Filename too long (POSIX.1-2001). */
+    CIO_ENOSYS = CIO__ENOSYS,                   /* Function not implemented (POSIX.1-2001). */
+    CIO_ENOTEMPTY = CIO__ENOTEMPTY,             /* Directory not empty (POSIX.1-2001). */
+    CIO_ELOOP = CIO__ELOOP,                     /* Too many levels of symbolic links (POSIX.1-2001). */
+    CIO_EPROTO = CIO__EPROTO,                   /* Protocol error (POSIX.1-2001). */
+    CIO_ENOTSOCK = CIO__ENOTSOCK,               /* Not a socket (POSIX.1-2001). */
+    CIO_EMSGSIZE = CIO__EMSGSIZE,               /* Message too long (POSIX.1-2001). */
+    CIO_EPROTONOSUPPORT = CIO__EPROTONOSUPPORT, /* Protocol not supported (POSIX.1-2001). */
+    CIO_ENOTSUP = CIO__ENOTSUP,                 /* Operation not supported (POSIX.1-2001). */
+    CIO_EAFNOSUPPORT = CIO__EAFNOSUPPORT,       /* Address family not supported (POSIX.1-2001). */
+    CIO_EADDRINUSE = CIO__EADDRINUSE,           /* Address already in use (POSIX.1-2001). */
+    CIO_EADDRNOTAVAIL = CIO__EADDRNOTAVAIL,     /* Address not available (POSIX.1-2001). */
+    CIO_ENETUNREACH = CIO__ENETUNREACH,         /* Network unreachable (POSIX.1-2001). */
+    CIO_ECONNABORTED = CIO__ECONNABORTED,       /* Connection aborted (POSIX.1-2001). */
+    CIO_ECONNRESET = CIO__ECONNRESET,           /* Connection reset (POSIX.1-2001). */
+    CIO_ENOBUFS = CIO__ENOBUFS,                 /* No buffer space available (POSIX.1 (XSI
+                                                   STREAMS option)). */
+    CIO_EISCONN = CIO__EISCONN,                 /* Socket is connected (POSIX.1-2001). */
+    CIO_ENOTCONN = CIO__ENOTCONN,               /* The socket is not connected (POSIX.1-2001). */
+    CIO_ETIMEDOUT = CIO__ETIMEDOUT,             /* Connection timed out (POSIX.1-2001). */
+    CIO_ECONNREFUSED = CIO__ECONNREFUSED,       /* Connection refused (POSIX.1-2001). */
+    CIO_EHOSTUNREACH = CIO__EHOSTUNREACH,       /* Host is unreachable (POSIX.1-2001). */
+    CIO_EALREADY = CIO__EALREADY,               /* Connection already in progress (POSIX.1-2001). */
+    CIO_EINPROGRESS = CIO__EINPROGRESS,         /* Operation in progress (POSIX.1-2001). */
+    CIO_ECANCELED = CIO__ECANCELED,             /* Operation canceled (POSIX.1-2001). */
 
-    CIO_EOF = -4095,
-    CIO_UNKNOWN = -4094,
+    CIO_EOF = -4095,     /* End of file. */
+    CIO_UNKNOWN = -4094, /* Unknown error. */
 } cio_errno_t;
+
+/**
+ * @brief Describe the error code.
+ * @param[in] errcode Error code.
+ * @return Describe string.
+ */
+const char* cio_strerror(int errcode);
 
 /**
  * @} GROUP: CIO_ERRNO
@@ -768,6 +778,35 @@ void cio_shutdown_library(void);
 
 /**
  * @} // GROUP: CIO_MISC
+ */
+
+/**
+ * @defgroup Socket
+ * @{
+ */
+
+typedef struct cio_socket cio_socket_t;
+
+/**
+ * @brief Create a socket.
+ * @param[out] sock Socket handle.
+ * @param[in] af Address family. Possible values:
+ *   + AF_UNSPEC: The address family is unspecified.
+ *   + AF_INET: The Internet Protocol version 4 (IPv4) address family.
+ *   + AF_INET6: The Internet Protocol version 6 (IPv6) address family.
+ * @param[in] type The type specification for the new socket. Possible values:
+ *   + SOCK_STREAM: A socket type that provides sequenced, reliable, two-way,
+ * connection-based byte streams with an OOB data transmission mechanism.
+ *   + SOCK_DGRAM: A socket type that supports datagrams, which are
+ * connectionless, unreliable buffers of a fixed (typically small) maximum
+ * length.
+ * @param[in] protocol The protocol to be used.
+ * @return Error code. See #cio_errno_t.
+ */
+int cio_socket_init(cio_socket_t** sock, int af, int type, int protocol);
+
+/**
+ * @}
  */
 
 #ifdef __cplusplus
